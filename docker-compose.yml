@@ -2,38 +2,38 @@ version: "3.9"
 
 services:
 
-	api:
-		build:
-			context: ./backend
-			dockerfile: Dockerfile
-		working_dir: /app
-		volumes:
-			- ./backend:/app
-		command: bash -c "pip install --no-cache-dir -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
-		env_file:
-			- .env
-		environment:
-			- SUPABASE_DB_URL=${SUPABASE_DB_URL}
-			- SUPABASE_DB_SSLMODE=${SUPABASE_DB_SSLMODE:-require}
-		ports:
-			- "8000:8000"
-		restart: unless-stopped
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: sh -c "pip install --no-cache-dir -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    env_file:
+      - .env
+    environment:
+      - SUPABASE_DB_URL=${SUPABASE_DB_URL}
+      - SUPABASE_DB_SSLMODE=${SUPABASE_DB_SSLMODE:-require}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
 
-	web:
-		build:
-			context: ./frontend
-			dockerfile: Dockerfile
-		working_dir: /usr/src/app
-		volumes:
-			- ./frontend:/usr/src/app
-			- /usr/src/app/node_modules
-		command: sh -c "npm ci && npm run dev -- --host"
-		env_file:
-			- .env
-		environment:
-			- API_URL=${API_URL:-http://localhost:8000}
-		ports:
-			- "3000:3000"
-		depends_on:
-			- api
-		restart: unless-stopped
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    working_dir: /usr/src/app
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    command: sh -c "npm ci && npm run dev -- --host"
+    env_file:
+      - .env
+    environment:
+      - API_URL=${API_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
