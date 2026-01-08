@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine
-from dotenv import load_dotenv
-from ..config import DB_URL
+from configs.config import DB_URL
 
 def get_engine():
     """
