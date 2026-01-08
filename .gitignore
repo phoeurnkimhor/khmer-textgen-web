@@ -107,7 +107,6 @@ temp/
 *.pkl
 *.pickle
 *.joblib
-*.pt
 *.pth
 *.onnx
 *.tflite
