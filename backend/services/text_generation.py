@@ -1,6 +1,6 @@
 import torch
 from models.loader import stoi, itos
-from utils.preprocessing import clean_text 
+from utils.clean import clean_text 
 
 def generate_text(model, seed_text, max_length=100, seq_len=50):
     

@@ -8,7 +8,9 @@ class GenerateRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "text": "សួស្តី"
+                "text": "សួស្តី",
+                "length" : 100,
+                "seq_len": 50
             }
         }
 

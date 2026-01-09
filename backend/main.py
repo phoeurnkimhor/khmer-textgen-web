@@ -1,15 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from configs.config import FRONTEND_URLS
-from routers import text_generation
+from routers import text_generation, train_lstm
 
 app = FastAPI(
-    title="Khmer Text to Royal Khmer Converter",
-    description="API for converting normal Khmer text to Royal Khmer text",
+    title="Khmer Text Generation",
+    description="API for Khmer Text Generation",
     version="1.0.0"
 )
 
 app.include_router(text_generation.router)
+app.include_router(train_lstm.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,11 +23,12 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {
-        "message": "Khmer to Royal Khmer Text Converter API",
+        "message": "API for Khmer Text Generation",
         "endpoints": {
             "translate": "/generate",
             "docs": "/docs",
-            "health": "/health"
+            "health": "/health",
+            "train" : "/train"
         }
     }
 
