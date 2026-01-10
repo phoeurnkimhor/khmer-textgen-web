@@ -31,4 +31,4 @@ class TrainingResponse(BaseModel):
     test_perplexity: float
     test_accuracy: float
     model_path: str
-    vocab_path: str
+    public_url: str  

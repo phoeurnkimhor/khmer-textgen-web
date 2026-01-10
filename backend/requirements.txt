@@ -6,3 +6,6 @@ python-dotenv==1.2.1
 torch==2.9.1
 pydantic==2.12.5
 pandas==2.3.3
+tuspy==1.1.0
+SQLAlchemy==2.0.45
+numpy==2.4.0
