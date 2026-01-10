@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Slider } from "@/components/ui/slider"
+import { Label } from "@/components/ui/label"
 import { ArrowRight, Copy, X, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -11,6 +13,8 @@ interface TranslatorAreaProps {
   isTranslating: boolean
   onInputChange: (text: string) => void
   onTranslate: () => void
+  length: number
+  onLengthChange: (length: number) => void
 }
 
 export function TranslatorArea({
@@ -19,6 +23,8 @@ export function TranslatorArea({
   isTranslating,
   onInputChange,
   onTranslate,
+  length,
+  onLengthChange
 }: TranslatorAreaProps) {
   const { toast } = useToast()
   const charCount = inputText.length
@@ -38,8 +44,8 @@ export function TranslatorArea({
   return (
     <main className="flex-1 flex flex-col overflow-hidden">
       <div className="border-b border-border p-6">
-        <h1 className="text-3xl font-bold text-balance">Text Style Translator</h1>
-        <p className="text-muted-foreground mt-2">Transform your text with AI-powered style translation</p>
+        <h1 className="text-3xl font-bold text-balance">Khmer Text Generation</h1>
+        <p className="text-muted-foreground mt-2">I can write khmer well btw :) </p>
       </div>
 
       <div className="flex-1 overflow-hidden p-6">
@@ -72,7 +78,7 @@ export function TranslatorArea({
           {/* Output Box */}
           <div className="flex flex-col bg-card border border-border rounded-lg overflow-hidden shadow-sm">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <span className="text-sm font-medium">Translated Text</span>
+              <span className="text-sm font-medium">Generated Text</span>
               {outputText && (
                 <button
                   onClick={handleCopy}
@@ -95,14 +101,36 @@ export function TranslatorArea({
               ) : outputText ? (
                 <p className="text-foreground leading-relaxed">{outputText}</p>
               ) : (
-                <p className="text-muted-foreground italic">Translated text will appear here...</p>
+                <p className="text-muted-foreground italic">Generatted text will appear here...</p>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="border-t border-border p-6">
+      <div className="border-t border-border p-6 space-y-6">
+        {/* Parameter Controls */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <Label htmlFor="length-slider" className="text-sm font-medium">
+              Length: {length}
+            </Label>
+            <Slider
+              id="length-slider"
+              min={10}
+              max={500}
+              step={10}
+              value={[length]}
+              onValueChange={(value) => onLengthChange(value[0])}
+              className="w-full"
+              disabled={isTranslating}
+            />
+            <p className="text-xs text-muted-foreground">
+              Number of characters to generate
+            </p>
+          </div>
+        </div>
+
         <Button
           onClick={onTranslate}
           disabled={!inputText.trim() || isTranslating}
@@ -112,11 +140,11 @@ export function TranslatorArea({
           {isTranslating ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Translating
+              Generating
             </>
           ) : (
             <>
-              Translate
+              Generate Text
               <ArrowRight className="w-4 h-4 ml-2" />
             </>
           )}

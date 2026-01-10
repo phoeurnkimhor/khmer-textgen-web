@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
-from schemas.training import TrainingRequest, TrainingResponse  # Added TrainingResponse
+from schemas.training import TrainingRequest, TrainingResponse  
 from utils.clean import clean_text
 from utils.build_vocab import build_vocab
 from utils.data_loader import get_dataloader
@@ -8,12 +7,19 @@ from utils.preprocessing import split_sentences, chunk_text
 from utils.evaluate import evaluate_model
 from services.training_loop import training
 from models.architecture import LSTMTST
+from services.save_model import upload_file
+from supabase import create_client
 import pandas as pd
 import torch
-import pickle
 import os
 from datetime import datetime
 
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+BUCKET_NAME = os.getenv("BUCKET_NAME", "models")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 router = APIRouter(prefix="/train", tags=["Model Training"])
 
@@ -31,8 +37,11 @@ def train(train: TrainingRequest):
     hidden_dim = train.hidden_dim
     num_layers = train.num_layers
 
-    # load data
-    df = pd.read.csv(data_path)
+    try:
+        df = pd.read.csv(data_path)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Failed to read dataset. Ensure the file path is correct and the file is a valid CSV.")
+    
     col_name = df.columns[0]
     df[col_name] = df[col_name].astype(str)
 
@@ -49,8 +58,8 @@ def train(train: TrainingRequest):
 
     # create new dataframe for training
     df = pd.DataFrame({
-    'sentence': df_exploded['chunks'],
-    'target': df_exploded['chunks']
+        'sentence': df_exploded['chunks'],
+        'target': df_exploded['chunks']
     })
 
     all_text, vocab, stoi, itos = build_vocab(df)
@@ -78,41 +87,44 @@ def train(train: TrainingRequest):
     
     perplexity, accuracy = evaluate_model(trained_model, test_loader)
     
-    # Save final model and vocabulary for user download
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    models_dir = "saved_models"
-    os.makedirs(models_dir, exist_ok=True)
+    os.makedirs("saved_models", exist_ok=True)
+    model_filename = f"lstm_model_{timestamp}.pt"
+    model_path = os.path.join("saved_models", model_filename)
     
-    model_path = f"{models_dir}/lstm_model_{timestamp}.pth"
-    vocab_path = f"{models_dir}/vocab_{timestamp}.pkl"
-    
-    torch.save(trained_model.state_dict(), model_path)
-    with open(vocab_path, 'wb') as f:
-        pickle.dump({'vocab': vocab, 'stoi': stoi, 'itos': itos}, f)
-    
-    # Clean up temporary checkpoint
-    temp_checkpoint = "temp_checkpoints/best_model_temp.pt"
-    if os.path.exists(temp_checkpoint):
-        os.remove(temp_checkpoint)
-    
+    torch.save({
+        'model_state_dict' : trained_model.state_dict(),
+        'vocab_size': len(stoi),
+        'stoi' : stoi,
+        'itos' : itos
+        }, model_path)
+
+    with open(model_path, "rb") as f:
+        try:
+            upload_file(
+                bucket_name=BUCKET_NAME,
+                file_name=model_filename,
+                file=f,
+                access_token=SUPABASE_KEY,
+                supabase_url=SUPABASE_URL
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Supabase upload failed: {e}")
+            
+    expires_in_seconds = 3600
+    signed_url = supabase.storage.from_(BUCKET_NAME).create_signed_url(
+    file_name=model_filename,
+    expires_in=expires_in_seconds
+    ).signed_url
+            
+
     return TrainingResponse(
-        message="Training completed successfully.",
+        message="Training completed and model uploaded successfully.",
         test_perplexity=perplexity,
         test_accuracy=accuracy,
         model_path=model_path,
-        vocab_path=vocab_path
+        signed_url=signed_url
     )
 
-@router.get("/download/{file_path:path}")
-def download_model(file_path: str):
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    filename = os.path.basename(file_path)
-    return FileResponse(
-        path=file_path,
-        filename=filename,
-        media_type='application/octet-stream'
-    )
 
 
