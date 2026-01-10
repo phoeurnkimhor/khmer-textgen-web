@@ -49,7 +49,7 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sidebar-foreground">
             <Sparkles className="w-6 h-6 text-blue-500" />
-            <span className="text-lg font-semibold">Khmer TST</span>
+            <span className="text-lg font-semibold">NoroAI</span>
           </div>
           {/* Mobile close button */}
           {onClose && (
