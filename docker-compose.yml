@@ -3,17 +3,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
     environment:
       - NEON_DB_URL=${DB_URL}
       - ENVIRONMENT=production
     volumes:
       - ./backend/best_model.pt:/app/best_model.pt:ro
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   frontend:
     build:
@@ -22,24 +19,16 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
-
-nginx:
-  image: nginx:latest
-  container_name: khmer-nginx
-  ports:
-    - "80:80"
-  volumes:
-    - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    - ./frontend/out:/usr/share/nginx/html:ro
-  depends_on:
-    - backend
-
-networks:
-  default:
-    driver: bridge
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend/out:/usr/share/nginx/html:ro
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
