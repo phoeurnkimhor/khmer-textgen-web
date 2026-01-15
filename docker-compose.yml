@@ -3,8 +3,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
     environment:
       - NEON_DB_URL=${DB_URL}
       - ENVIRONMENT=production
@@ -21,10 +19,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
       - backend
     restart: unless-stopped
@@ -33,6 +27,18 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+
+nginx:
+  image: nginx:latest
+  container_name: khmer-nginx
+  ports:
+    - "80:80"
+  volumes:
+    - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    - ./frontend/out:/usr/share/nginx/html:ro
+  depends_on:
+    - backend
 
 networks:
   default:
