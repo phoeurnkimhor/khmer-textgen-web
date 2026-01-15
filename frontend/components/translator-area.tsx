@@ -101,7 +101,7 @@ export function TranslatorArea({
               ) : outputText ? (
                 <p className="text-foreground leading-relaxed">{outputText}</p>
               ) : (
-                <p className="text-muted-foreground italic">Generatted text will appear here...</p>
+                <p className="text-muted-foreground italic">Generated text will appear here...</p>
               )}
             </div>
           </div>

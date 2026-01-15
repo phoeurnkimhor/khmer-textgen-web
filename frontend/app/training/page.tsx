@@ -10,14 +10,14 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { Menu } from "lucide-react"
+import { Menu, Upload } from "lucide-react"
 
 export default function TrainingPage() {
   const { startTraining, isTraining, result, error, resetError, reset, progress } = useModelTraining()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   
   const [formData, setFormData] = useState({
-    dataset_path: "",
     chunk_size: 120,
     seq_len: 50,
     batch_size: 32,
@@ -35,21 +35,39 @@ export default function TrainingPage() {
     }))
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const fileName = file.name.toLowerCase()
+      const isCSV = fileName.endsWith('.csv') || file.type === 'text/csv' || file.type === 'application/csv'
+      const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || 
+                       file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                       file.type === 'application/vnd.ms-excel'
+      
+      if (isCSV || isExcel) {
+        setSelectedFile(file)
+      } else {
+        alert('Please select a valid CSV or Excel file (.csv, .xlsx, .xls)')
+        e.target.value = ''
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     resetError()
     
-    if (!formData.dataset_path.trim()) {
+    if (!selectedFile) {
       return
     }
 
-    await startTraining(formData)
+    await startTraining({ ...formData, file: selectedFile })
   }
 
   const handleReset = () => {
     reset()
+    setSelectedFile(null)
     setFormData({
-      dataset_path: "",
       chunk_size: 120,
       seq_len: 50,
       batch_size: 32,
@@ -115,14 +133,30 @@ export default function TrainingPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="dataset_path">Dataset Path *</Label>
-                <Input
-                  id="dataset_path"
-                  placeholder="/path/to/your/dataset.csv"
-                  value={formData.dataset_path}
-                  onChange={(e) => handleInputChange("dataset_path", e.target.value)}
-                  disabled={isTraining}
-                />
+                <Label htmlFor="dataset_file">Dataset File *</Label>
+                <div className="relative">
+                  <Input
+                    id="dataset_file"
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    onChange={handleFileChange}
+                    disabled={isTraining}
+                    className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                  />
+                </div>
+                {selectedFile && (
+                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                )}
+                {!selectedFile && (
+                  <p className="text-xs text-muted-foreground">
+                    Upload a CSV or Excel file (.csv, .xlsx, .xls) containing your training dataset
+                  </p>
+                )}
               </div>
 
               <Separator />
@@ -211,7 +245,7 @@ export default function TrainingPage() {
               </div>
 
               <div className="flex gap-2 pt-4">
-                <Button type="submit" disabled={isTraining || !formData.dataset_path.trim()}>
+                <Button type="submit" disabled={isTraining || !selectedFile}>
                   {isTraining ? "Training..." : "Start Training"}
                 </Button>
                 <Button type="button" variant="outline" onClick={handleReset} disabled={isTraining}>

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from configs.config import FRONTEND_URLS
-from routers import text_generation, train_lstm
+from routers import text_generation
 
 app = FastAPI(
     title="Khmer Text Generation",
@@ -10,7 +10,6 @@ app = FastAPI(
 )
 
 app.include_router(text_generation.router)
-app.include_router(train_lstm.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,7 +27,6 @@ async def root():
             "translate": "/generate",
             "docs": "/docs",
             "health": "/health",
-            "train" : "/train"
         }
     }
 
