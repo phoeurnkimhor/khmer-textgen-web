@@ -1,17 +1,24 @@
 # Use Node 20 on Debian slim (for glibc compatibility with lightningcss)
-FROM node:20-slim AS base
+FROM node:20-bookworm AS base
+
+# Install pnpm globally
+RUN npm install -g pnpm
 
 # Set working directory
-WORKDIR /app
+WORKDIR /app    
 
 # Install dependencies only when needed
 FROM base AS deps
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # Build the application
 FROM base AS builder
 WORKDIR /app
+
+# Build argument for API URL
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Install build tools for native dependencies
 RUN apt-get update && apt-get install -y build-essential python3 rustc cargo && rm -rf /var/lib/apt/lists/*
@@ -21,22 +28,21 @@ COPY . .
 COPY --from=deps /app/node_modules ./node_modules
 
 # Rebuild native modules to match container environment
-RUN npm rebuild lightningcss
+RUN pnpm rebuild lightningcss
 
-RUN npm run build
+RUN pnpm run build
 
 # Production image
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV PORT=3300
 
-# Copy exported static files (Next.js exports to 'out' directory)
-COPY --from=builder /app/out ./out
+# Copy built application
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# Simple HTTP server to serve static files
-RUN npm install -g serve
-CMD ["serve", "-s", "out", "-l", "3000"]
+EXPOSE 3300
 
-# Expose port 3000
-EXPOSE 3000
+CMD ["node", "server.js"]

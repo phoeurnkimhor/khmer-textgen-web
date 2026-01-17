@@ -1,5 +1,6 @@
-// API Base Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+// API Base Configuration - use Next.js API routes (server-side proxy)
+// This keeps the backend completely private and not exposed to the internet
+export const API_BASE_URL = '/api'
 
 // API Response Types
 export interface GenerateResponse {
